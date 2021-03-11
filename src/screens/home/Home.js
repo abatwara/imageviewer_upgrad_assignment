@@ -100,7 +100,8 @@ class Home extends Component {
                     console.log(JSON.parse(this.responseText).data[0].media_url);
                     that.setState({
                         //Profile picture obtained from the API is stored in profile_picture & username in userName
-                        profile_picture: JSON.parse(this.responseText).data[0].media_url,
+                        //profile_picture: JSON.parse(this.responseText).data[0].media_url,
+                        profile_picture: "https://instagram.fudr1-1.fna.fbcdn.net/v/t51.2885-19/s320x320/158002799_438464274145520_9112874375743201617_n.jpg?tp=1&_nc_ht=instagram.fudr1-1.fna.fbcdn.net&_nc_ohc=vBI0Lz928GsAX__pAXZ&oh=64c3a6574d06a686af7183521a68bc68&oe=6072DE48",
                         userName: JSON.parse(this.responseText).data[0].username
 
                     });
@@ -122,12 +123,12 @@ class Home extends Component {
 
                     let imageArr = JSON.parse(this.responseText).data
                     //As the created_time are in milliseconds it would be  converted as per the required format
-                    var iter = 0;
+
                     imageArr.forEach(element => {
-                        var date = parseInt(element.created_time, 10);
+                        var date = parseInt(element.timestamp, 10);
                         date = new Date(date * 1000);
                         //changing the format to Locale String  
-                        element.created_time = date.toLocaleString()
+                        element.timestamp = date.toLocaleString()
                         element.likes = { count: 0 };
 
                     });
@@ -301,10 +302,10 @@ class Home extends Component {
                                             <img src={image.media_url} alt={profileImage} className={classes.media} />
                                             <div className="horizontal-rule"></div>
                                             <div className="image-caption">
-                                                {image.caption.split("#")[0]}
+                                                {image.caption && image.caption.substring(0, image.caption.indexOf("#"))}
                                             </div>
                                             <div className="image-hashtags">
-                                                {image.caption.substring(image.caption.indexOf("#"))}
+                                                {image.caption && image.caption.substring(image.caption.indexOf("#"))}
                                             </div>
                                             <div>
                                                 <IconButton className="like-button" aria-label="like-button" onClick={() => this.likeBtnHandler(image.id)}>

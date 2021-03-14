@@ -83,31 +83,61 @@ class Home extends Component {
             count: 1,
         };
     }
-    // As per the warning UNSAFE_ is prefixed before componentWillMount method
+
+    //This method will convert the given date in 'dd/mm/yyyy HH:MM:SS'
+    getFormatedDate = (mydate) => {
+        let date = new Date(mydate);
+        let dd = date.getDate();
+
+        let mm = date.getMonth() + 1;
+        let yyyy = date.getFullYear();
+        let h = date.getHours();
+        let m = date.getMinutes();
+        let s = date.getSeconds();
+        if (dd < 10) {
+            dd = '0' + dd;
+        }
+        if (mm < 10) {
+            mm = '0' + mm;
+        }
+        date = dd + '/' + mm + '/' + yyyy + ' ' + h + ":" + m + ":" + s;
+        console.log(date);
+        return date;
+    }
+
+
     // In this method all the api will be called before the component is show,
     // the rendering will occur once all the initial state are set
     componentDidMount() {
         // Get data from first API endpoint
         //This is called to get the profile details of the user such as username and profile_picture
         //API calls are made only when the user is Logged in
-        let that = this;
+        let self = this;
         if (this.state.isLoggedIn) {
             let data = null;
             let xhr = new XMLHttpRequest();
             console.log(this.state);
-            xhr.addEventListener("readystatechange", function () {
-                if (this.readyState === 4) {
-                    console.log(JSON.parse(this.responseText).data[0].media_url);
-                    that.setState({
-                        //Profile picture obtained from the API is stored in profile_picture & username in userName
-                        //profile_picture: JSON.parse(this.responseText).data[0].media_url,
-                        profile_picture: "https://instagram.fudr1-1.fna.fbcdn.net/v/t51.2885-19/s320x320/158002799_438464274145520_9112874375743201617_n.jpg?tp=1&_nc_ht=instagram.fudr1-1.fna.fbcdn.net&_nc_ohc=vBI0Lz928GsAX__pAXZ&oh=64c3a6574d06a686af7183521a68bc68&oe=6072DE48",
-                        userName: JSON.parse(this.responseText).data[0].username
 
-                    });
-                };
+            xhr.addEventListener("readystatechange", function () {
+                try {
+                    if (this.readyState === 4) {
+                        console.log(JSON.parse(this.responseText).data[0].media_url);
+                        self.setState({
+                            //Profile picture obtained from the API is stored in profile_picture & username in userName
+                            //profile_picture: JSON.parse(this.responseText).data[0].media_url,
+                            profile_picture: "https://instagram.fudr1-1.fna.fbcdn.net/v/t51.2885-19/s320x320/158002799_438464274145520_9112874375743201617_n.jpg?tp=1&_nc_ht=instagram.fudr1-1.fna.fbcdn.net&_nc_ohc=vBI0Lz928GsAX__pAXZ&oh=64c3a6574d06a686af7183521a68bc68&oe=6072DE48",
+                            userName: JSON.parse(this.responseText).data[0].username
+
+                        });
+                    };
+
+                } catch (Error) {
+                    self.setState({
+                        isLoggedIn: false
+                    })
+                }
             });
-            xhr.open("GET", this.props.baseUrl + "me/media?fields=id,username,caption,media_url,media_type&access_token=" + that.state.accessToken);
+            xhr.open("GET", this.props.baseUrl + "me/media?fields=id,username,caption,media_url,media_type&access_token=" + self.state.accessToken);
             xhr.send(data);
 
         }
@@ -119,34 +149,37 @@ class Home extends Component {
         if (this.state.isLoggedIn) {
             let xhrImages = new XMLHttpRequest();
             xhrImages.addEventListener("readystatechange", function () {
-                if (this.readyState === 4) {
+                try {
+                    if (this.readyState === 4) {
 
-                    let imageArr = JSON.parse(this.responseText).data
-                    //As the created_time are in milliseconds it would be  converted as per the required format
-
-                    imageArr.forEach(element => {
-                        var date = parseInt(element.timestamp, 10);
-                        date = new Date(date * 1000);
-                        //changing the format to Locale String  
-                        element.timestamp = date.toLocaleString()
-                        element.likes = { count: 0 };
-
-                    });
-                    //loadHomePage method called to set the state of the images and render the page
-                    that.loadHomePage(imageArr);
-
+                        let imageArr = JSON.parse(this.responseText).data;
+                        let imagesOnly = [];
+                        //As the timestamp is in 'yyyy-mm--ddTHH:MM:SS' it would be  converted as per the required format
+                        imageArr.forEach(element => {
+                            element.timestamp = self.getFormatedDate(element.timestamp);
+                            element.likes = { count: Math.floor((Math.random() * 10) + 1) };
+                            if (element.media_type === "IMAGE")
+                                imagesOnly.push(element);
+                        });
+                        //loadHomePage method called to set the state of the images and render the page
+                        self.loadHomePage(imagesOnly);
+                    }
+                } catch (Error) {
+                    self.setState({
+                        isLoggedIn: false
+                    })
                 }
             })
-            xhrImages.open("GET", this.props.baseUrl + "me/media?fields=id,caption,timestamp,media_url&access_token=" + that.state.accessToken);
+            xhrImages.open("GET", this.props.baseUrl + "me/media?fields=id,caption,timestamp,media_url,media_type&access_token=" + self.state.accessToken);
             xhrImages.send();
         }
     }
 
     //This method takes the image array as sets it to the state images array triggering rerender
-    loadHomePage = (imageArr) => {
+    loadHomePage = (imagesOnly) => {
         this.setState({
             ...this.state,
-            images: imageArr
+            images: imagesOnly
         });
     }
 
@@ -154,7 +187,7 @@ class Home extends Component {
     //This method takes the imageId as one parameter which is added to comment object and then updates the commentText state  
     //ImageId is given so that the comment input line of active card only shows the input text given.  
     onCommentTextChangeHandler = (event, imageId) => {
-        var comment = {
+        let comment = {
             id: imageId,
             text: event.target.value,
         }
@@ -171,21 +204,23 @@ class Home extends Component {
     //Comments are stored in the comment array controlled by state 
     //Once the comment is pushed to the state comment array commentText is made empty so that comment input box returns to empty line
     onClickAddBtn = (imageId) => {
-        var count = this.state.count
-        var comment = {
-            id: count,
-            imageId: imageId,
-            username: this.state.userName,
-            text: this.state.commentText.text,
+        let count = this.state.count
+        if (this.state.commentText.text && this.state.commentText.text.length > 0) {
+            let comment = {
+                id: count,
+                imageId: imageId,
+                username: this.state.userName,
+                text: this.state.commentText.text,
+            }
+            count++;
+            let comments = [...this.state.comments, comment];
+            this.setState({
+                ...this.state,
+                count: count,
+                comments: comments,
+                commentText: "",
+            })
         }
-        count++;
-        var comments = [...this.state.comments, comment];
-        this.setState({
-            ...this.state,
-            count: count,
-            comments: comments,
-            commentText: "",
-        })
     }
 
     // This Handles when the like button is clicked.
@@ -194,8 +229,8 @@ class Home extends Component {
     //which is iterated over a loop to find the images and the boolean value of user_has_liked is changed to false
     //The likes count is either increased or decreased based on the previous state of user_has_liked
     likeBtnHandler = (imageId) => {
-        var i = 0
-        var imageArray = this.state.images
+        let i = 0
+        let imageArray = this.state.images
         for (i; i < imageArray.length; i++) {
             if (imageArray[i].id === imageId) {
                 if (imageArray[i].user_has_liked === true) { // check to see if user has already liked
@@ -228,17 +263,16 @@ class Home extends Component {
     onSearchTextChange = (keyword) => {
         console.log(keyword);
         if (!(keyword === "")) {//check if search input value is empty
-            var originalImageArr = [];
+            let originalImageArr = [];
             //First search the originalImageArr is set to images following it is set to itself so that data is not lost.
             this.state.searchOn ? originalImageArr = this.state.originalImageArr : originalImageArr = this.state.images;
-            var updatedImageArr = [];
-            var searchOn = true;                            // changing the searchOn to true until it is keyword is null
+            let updatedImageArr = [];
+            let searchOn = true;                            // changing the searchOn to true until it is keyword is null
             keyword = keyword.toLowerCase();                //changing to lower case for comparison
             originalImageArr.forEach((element) => {
-                var caption = element.caption;          // extracting the caption
-                caption = caption.toLowerCase();
-                console.log(caption);                                       // changing to lower case
-                if (caption.includes(keyword)) {                        //checking if keyword is substring of caption 
+                let caption = element.caption;          // extracting the caption
+                caption = caption && caption.toLowerCase(); // changing to lower case
+                if (caption && caption.includes(keyword)) {                        //checking if keyword is substring of caption 
                     updatedImageArr.push(element);                      //if yes adding to the updatedImageArr 
                 }
             })
@@ -257,7 +291,7 @@ class Home extends Component {
                 })
             }
         } else {                     //If keyword is null then search is not On and corresponding changes are done
-            searchOn = false
+            let searchOn = false
             this.setState({
                 ...this.state,
                 searchOn: searchOn,

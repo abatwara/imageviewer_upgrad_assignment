@@ -98,49 +98,78 @@ class Profile extends Component {
             accessToken: sessionStorage.getItem("access-token"),
         }
     }
+    //This method will convert the given date in 'dd/mm/yyyy HH:MM:SS'
+    getFormatedDate = (mydate) => {
+        let date = new Date(mydate);
+        let dd = date.getDate();
+
+        let mm = date.getMonth() + 1;
+        let yyyy = date.getFullYear();
+        let h = date.getHours();
+        let m = date.getMinutes();
+        let s = date.getSeconds();
+        if (dd < 10) {
+            dd = '0' + dd;
+        }
+        if (mm < 10) {
+            mm = '0' + mm;
+        }
+        date = dd + '/' + mm + '/' + yyyy + ' ' + h + ":" + m + ":" + s;
+        console.log(date);
+        return date;
+    }
 
     componentDidMount() {
         if (this.state.isLoggedIn) {
             let resp = {};
             let data = null;
             let xhr = new XMLHttpRequest();
-            let that = this;
+            let self = this;
             xhr.addEventListener("readystatechange", function () {
-                if (xhr.readyState === 4) {
-                    resp = JSON.parse(this.responseText);
-                    console.log("hello");
-                    that.setState({ profilePicture: "https://instagram.fudr1-1.fna.fbcdn.net/v/t51.2885-19/s320x320/158002799_438464274145520_9112874375743201617_n.jpg?tp=1&_nc_ht=instagram.fudr1-1.fna.fbcdn.net&_nc_ohc=vBI0Lz928GsAX__pAXZ&oh=64c3a6574d06a686af7183521a68bc68&oe=6072DE48" });
+                try {
+                    if (xhr.readyState === 4) {
 
-                    that.setState({ username: resp.username });
-                    that.setState({ noOfPosts: 5 });
-                    that.setState({ follows: 5 });
-                    that.setState({ followedBy: 5 });
-                    that.setState({ fullname: "Anuj Batwara" });
+                        resp = JSON.parse(this.responseText);
+                        console.log("hello");
+                        self.setState({ profilePicture: "https://instagram.fudr1-1.fna.fbcdn.net/v/t51.2885-19/s320x320/158002799_438464274145520_9112874375743201617_n.jpg?tp=1&_nc_ht=instagram.fudr1-1.fna.fbcdn.net&_nc_ohc=vBI0Lz928GsAX__pAXZ&oh=64c3a6574d06a686af7183521a68bc68&oe=6072DE48" });
 
+                        self.setState({ username: resp.username });
+                        self.setState({ noOfPosts: resp.media_count });
+                        self.setState({ follows: Math.floor((Math.random() * 10) + 1) });
+                        self.setState({ followedBy: Math.floor((Math.random() * 10) + 1) });
+                        self.setState({ fullname: "Anuj Batwara" });
+
+                    }
+                } catch (Error) {
+                    window.location = "http://localhost:3000/";
                 }
             });
-            xhr.open("GET", this.props.baseUrl + "/me/?fields=id,username,media_count&access_token=" + that.state.accessToken);
-
-
+            xhr.open("GET", this.props.baseUrl + "/me/?fields=id,username,media_count&access_token=" + self.state.accessToken);
             xhr.send(data);
 
             var imageData = null;
             let imageXhr = new XMLHttpRequest();
             imageXhr.addEventListener('readystatechange', function () {
-                if (imageXhr.readyState === 4) {
-                    let imageArray = JSON.parse(this.responseText).data;
-                    that.setState({ imagesData: imageArray });
-                    imageArray.forEach(element => {
-                        var date = parseInt(element.created_time, 10);
-                        date = new Date(date * 1000);
-                        //changing the format to Locale String  
-                        element.created_time = date.toLocaleString()
-                        element.likes = { count: 0 };
-
-                    });
+                try {
+                    if (imageXhr.readyState === 4) {
+                        let imageArray = JSON.parse(this.responseText).data;
+                        let imagesOnly = [];
+                        //As the timestamp is in 'yyyy-mm--ddTHH:MM:SS' it would be  converted as per the required format
+                        imageArray.forEach(element => {
+                            element.timestamp = self.getFormatedDate(element.timestamp);
+                            element.likes = { count: Math.floor((Math.random() * 10) + 1) };
+                            if (element.media_type === "IMAGE")
+                                imagesOnly.push(element);
+                        });
+                        self.setState({ imagesData: imagesOnly });
+                    }
+                } catch (Error) {
+                    self.setState({
+                        isLoggedIn: false
+                    })
                 }
             });
-            imageXhr.open("GET", this.props.baseUrl + "me/media?fields=id,username,media_url,caption&access_token=" + that.state.accessToken);
+            imageXhr.open("GET", this.props.baseUrl + "me/media?fields=id,caption,timestamp,media_url,media_type&access_token=" + self.state.accessToken);
             imageXhr.send(imageData);
         }
     }
@@ -226,20 +255,22 @@ class Profile extends Component {
 
     // Handles adding of comments to an image
     onClickAddBtn = (imageId) => {
-        var count = this.state.count
-        var comment = {
-            id: count,
-            imageId: imageId,
-            username: this.state.username,
-            text: this.state.commentText.text,
+        if (this.state.commentText.text && this.state.commentText.text.length) {
+            var count = this.state.count
+            var comment = {
+                id: count,
+                imageId: imageId,
+                username: this.state.username,
+                text: this.state.commentText.text,
+            }
+            count++;
+            var comments = [...this.state.comments, comment];
+            this.setState({
+                count: count,
+                comments: comments,
+                commentText: "",
+            });
         }
-        count++;
-        var comments = [...this.state.comments, comment];
-        this.setState({
-            count: count,
-            comments: comments,
-            commentText: "",
-        })
     };
 
     onCommentTextChangeHandler = (event, imageId) => {

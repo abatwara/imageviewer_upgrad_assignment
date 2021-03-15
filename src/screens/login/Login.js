@@ -45,7 +45,7 @@ class Login extends Component {
         let username = "imageviewer";
         let password = "upgrad";
 
-        let accessToken = "IGQVJVZAVkxSDNFd1RPSlFKOVFlRl9QX2VzM1pnNHNYUU03a19CTHhtakF2OUZAKMkczYU0tMnhHVlRVZA2h6MmdKeE1CRkdpNkhjU2RXdWJnR2xxY0V1R3VjNklhYjA4MGFEbGFYdUE5M2gtLVVubDlnNHFueHhfdUlvNFVj";
+        let accessToken = "IGQVJXNFdmTXY3YXk2UlVpemtjNjVQdVJ0RGh5Vk5ud0hSTElFdTlTRmxneGpDanl4b3hxeHc2dVp4MkJGdHVocXhHLUZAFREN4eDN2WVo5aFFrWW5jNUdacFRCUzY2V3RnbTN4NHhackNRMkFFcV83ZAmR6OFB5MjdHbVJz";
         if (this.state.username === "" || this.state.password === "") {
             // The usernameRequired and passwordRequired fields are used when we want to store the class to be assigned 
             this.state.username === "" ? this.setState({ usernameRequired: "dispBlock" }) : this.setState({ usernameRequired: "dispNone" });
